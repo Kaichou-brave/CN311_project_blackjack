@@ -1,8 +1,8 @@
-
 import threading
 import socket
 from tkinter import messagebox
 import tkinter
+from turtle import left
 
 
 def load_images(card_images):
@@ -29,26 +29,37 @@ def load_images(card_images):
             card_images.update({f"{str(card)}_{suit}": (10, image, )})
 
 
-row_num = 2
-
-
 class Game:
     name = None
+    frame = None
     hand = []
+    hand_count = 0
 
-    def __init__(self, card_frame, initialize):
-        global row_num
+    def __init__(self, initialize):
         self.name = initialize[0]
         self.hand = initialize[1]
+        self.hand_count = len(initialize[1])
+
+        card_frame = tkinter.Frame(
+            mainWindow, relief="sunken", borderwidth=1, bg="black")
+        card_frame.pack(ipadx=1,
+                        ipady=1, fill='x', side="left")
         score_label = tkinter.IntVar()
         tkinter.Label(card_frame, text=self.name, bg="black",
-                      fg="white").grid(row=row_num, column=0)
+                      fg="white").pack(side="left")
         tkinter.Label(card_frame, textvariable=score_label,
-                      bg="black", fg="white").grid(row=row_num+1, column=0)
-        row_num += 2
+                      bg="black", fg="white").pack(side="left")
+        frame = tkinter.Frame(card_frame, bg="black")
+        frame.pack(side="left")
+        for i in range(self.hand_count):
+            self.add_card(self.hand[i])
 
     def update():
         None
+
+    def add_card(self, img):
+        tkinter.Label(self.frame, image=img[1],
+                      relief="raised").pack(side="left")
 
 
 def connect():
@@ -96,16 +107,19 @@ def receive_data_from_server(sck, m):
         if not from_server:
             break
 
+
 def hit():
     global client
     msg = "hit"
     client.send(msg.encode())
 
+
 def stay():
     global client
     msg = "stay"
     client.send(msg.encode())
-    
+
+
 # initialize tkinter application
 mainWindow = tkinter.Tk()
 mainWindow.title("Black Jack")
@@ -129,17 +143,17 @@ topFrame.pack(side=tkinter.TOP)
 cards = {}
 load_images(cards)
 
-print(cards)
+# print(cards)
 
-card_frame = tkinter.Frame(
-    mainWindow, relief="sunken", borderwidth=1, bg="black")
-card_frame.pack(side=tkinter.LEFT)
-
-# load initial player data
-data = [["jack", [1, 2, 3]], ["black", [3, 2, 1]]]
+# load data to display
+data = [["jack", [cards["jack_spade"], cards["2_heart"], ]],
+        ["black", [cards["5_spade"], ]],
+        ["test", [cards["6_club"], cards["king_spade"], ]]
+        ]
+print(data)
 player = []
 for i in range(len(data)):
-    play = Game(card_frame, data[i])
+    play = Game(data[i])
     player.append(play)
 
 botFrame = tkinter.Frame(mainWindow)

@@ -94,7 +94,7 @@ def blackjack(client_connection, client_ip_addr):
 
     update_client_names_display(clients_names)  # update client names display
 
-
+    status = True
     while True:
         data = client_connection.recv(4096).decode()
         if not data:
@@ -113,11 +113,15 @@ def blackjack(client_connection, client_ip_addr):
                     if c != client_connection:
                         #c.send()
                         None
-                        
-        if data == "hit":
-            deal_player(client_connection)
-            # you need to sent your data that have already been update back to yours
-            # client_connection.send()
+        if status != False:
+            if data == "stay":
+                stay.append(1)
+                status = False
+                         
+            if data == "hit":
+                deal_player(client_connection)
+                # you need to sent your data that have already been update back to yours
+                # client_connection.send()
             
 
     # find the client index then remove from both lists(client name list and connection list)

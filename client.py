@@ -2,6 +2,7 @@ import threading
 import socket
 from tkinter import messagebox
 import tkinter
+import pickle
 from turtle import left
 
 
@@ -28,7 +29,7 @@ def load_images(card_images):
             image = tkinter.PhotoImage(file=name)
             card_images.update({f"{str(card)}_{suit}": (10, image, )})
 
-
+# manage player in game contains card
 class Game:
     name = None
     frame = None
@@ -38,27 +39,54 @@ class Game:
     def __init__(self, initialize):
         self.name = initialize[0]
         self.hand = initialize[1]
-        self.hand_count = len(initialize[1])
+        print(self.hand)
+        self.hand_count = len(initialize[1]) - 1
 
-        card_frame = tkinter.Frame(
+        self.frame = card_frame = tkinter.Frame(
             mainWindow, relief="sunken", borderwidth=1, bg="black")
-        card_frame.pack(ipadx=1,
+        self.frame.pack(ipadx=1,
                         ipady=1, fill='x', side="left")
+
         score_label = tkinter.IntVar()
         tkinter.Label(card_frame, text=self.name, bg="black",
                       fg="white").pack(side="left")
         tkinter.Label(card_frame, textvariable=score_label,
                       bg="black", fg="white").pack(side="left")
+        score_label.set(self.hand[-1])
         frame = tkinter.Frame(card_frame, bg="black")
         frame.pack(side="left")
         for i in range(self.hand_count):
             self.add_card(self.hand[i])
 
-    def update():
-        None
+    def update(self, data):
+        self.hand = data
+        self.hand_count = len(data) - 1
+        print(self.hand)
+        frame = self.frame
+
+        frame.pack_forget()
+        frame.destroy()
+
+        self.frame = card_frame = tkinter.Frame(
+            mainWindow, relief="sunken", borderwidth=1, bg="black")
+        self.frame.pack(ipadx=1,
+                        ipady=1, fill='x', side="left")
+
+        score_label = tkinter.IntVar()
+        tkinter.Label(card_frame, text=self.name, bg="black",
+                      fg="white").pack(side="left")
+        tkinter.Label(card_frame, textvariable=score_label,
+                      bg="black", fg="white").pack(side="left")
+        score_label.set(self.hand[-1])
+
+        frame = tkinter.Frame(card_frame, bg="black")
+        frame.pack(side="left")
+        for i in range(self.hand_count):
+            self.add_card(self.hand[i])
 
     def add_card(self, img):
-        tkinter.Label(self.frame, image=img[1],
+        global cards
+        tkinter.Label(self.frame, image=cards[img][1],
                       relief="raised").pack(side="left")
 
 
@@ -87,6 +115,7 @@ def connect_to_server(name):
 
         entName.config(state=tkinter.DISABLED)
         btnConnect.config(state=tkinter.DISABLED)
+        threading._start_new_thread(receive_data_from_server, (client, " "))
 
     except Exception as e:
         None
@@ -100,12 +129,55 @@ def disconnect():
     mainWindow.destroy()
 
 
-def receive_data_from_server(sck, m):
-    while True:
-        from_server = sck.recv(4096).decode()
+player = {}
 
-        if not from_server:
+
+def receive_data_from_server(sck, m):
+    global player
+    while True:
+        data = pickle.loads(sck.recv(4096))
+        print(f"Log {data[0]}")
+        if data[0] == "init":
+            gameData = [username, data[1]]
+            play = Game(gameData)
+            player.update({username: play})
+        elif data[0] == "hit":
+            play = player[username]
+            play.update(data[1])
+        if not data:
             break
+
+# Legacy Code, I wrote it and I wanna keep it by Jj
+
+
+def updateData():
+    global data
+    data = [[]]
+    dataTest = []
+    count = len(dataHand)
+
+    for i in dataHand:
+        dataTest.append(i)
+        if count != 1:
+            data.append([])
+        count = count - 1
+    for i in range(len(dataTest)):
+        # print(dataTest[i]) #playerName
+        data[i].append(dataTest[i])
+
+    for i in range(len(dataTest)):
+        playerHand = []
+        cardData = []
+        for j in range(len(dataHand[dataTest[i]])):
+            cardData.append(dataHand[dataTest[i]][j])
+            # print(dataHand[dataTest[i]][j])
+
+        for k in range(len(cardData)):
+            playerHand.append(cards[cardData[k]])
+            # data[i].append(cards[cardData[k]])
+        data[i].append(playerHand)
+
+    # print(data)
 
 
 def hit():
@@ -145,16 +217,6 @@ load_images(cards)
 
 # print(cards)
 
-# load data to display
-data = [["jack", [cards["jack_spade"], cards["2_heart"], ]],
-        ["black", [cards["5_spade"], ]],
-        ["test", [cards["6_club"], cards["king_spade"], ]]
-        ]
-print(data)
-player = []
-for i in range(len(data)):
-    play = Game(data[i])
-    player.append(play)
 
 botFrame = tkinter.Frame(mainWindow)
 btnHit = tkinter.Button(botFrame, text="Hit", command=lambda: hit())

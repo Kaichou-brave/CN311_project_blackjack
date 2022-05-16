@@ -56,7 +56,7 @@ def start_server():
     server.bind((HOST_ADDR, HOST_PORT))
     server.listen(5)  # server is listening for client connection
     load_card(cards)
-    deck = list(cards) + list(cards) + list(cards)
+    deck = list(cards)
     random.shuffle(deck)
     threading._start_new_thread(accept_clients, (server, " "))
 
@@ -64,6 +64,7 @@ def start_server():
     lblPort["text"] = "Port: " + str(HOST_PORT)
 
 # Stop server function
+
 
 def stop_server():
     global server
@@ -85,6 +86,7 @@ cards = []
 player_hand = {}
 deck = []
 
+
 def blackjack(client_connection, client_ip_addr):
     global server, client_name, clients, stay
 
@@ -93,6 +95,8 @@ def blackjack(client_connection, client_ip_addr):
     clients_names.append(client_name)
 
     update_client_names_display(clients_names)  # update client names display
+    initial_deal(client_connection)
+    client_connection.send(pickle.dumps(["init", player_hand[client_name]]))
 
     status = True
     count_hit = 0
@@ -112,22 +116,23 @@ def blackjack(client_connection, client_ip_addr):
 
                 for c in clients:
                     if c != client_connection:
-                        #c.send()
+                        # c.send()
                         None
-                        
+
         if status != False:
             if data == "stay":
                 print(f"player {client_name}: Stay!")
                 stay.append(1)
                 status = False
-                         
+
             if data == "hit" and count_hit < 5:
                 count_hit += 1
                 print(f"player {client_name}: Hit!")
-                #deal_player(client_connection)
+                deal_player(client_connection)
                 # you need to sent your data that have already been update back to yours
-                # client_connection.send()
-            
+                client_connection.send(pickle.dumps(
+                    ["hit", player_hand[client_name]]))
+                # client_connection.send(msg.encode())
 
     # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)
@@ -167,16 +172,22 @@ def load_card(cards):
     face_cards = ['jack', 'queen', 'king']
     for suit in suits:
         for card in range(1, 11):
-            cards.append(f"{str(card)}_{suit}")
+            data = f"{str(card)}_{suit}"
+            cards.append([data, card])
 
         for card in face_cards:
-            cards.append(f"{str(card)}_{suit}")
-
+            data = f"{str(card)}_{suit}"
+            cards.append([data, 10])
+    print(cards)
 # deal card
+
+
 def deal_card():
     return deck.pop(0)
 
-# initial card for player 
+# initial card for player
+
+
 def initial_deal(client_connection):
     global client_name, clients, player_hand
     idx = get_client_index(clients, client_connection)
@@ -184,17 +195,35 @@ def initial_deal(client_connection):
     player_hand.update({hand_client_name: []})
     deal_player(client_connection)
     deal_player(client_connection)
-    print(f" player {hand_client_name} inital hand : {player_hand[hand_client_name]}")
+    print(
+        f" player {hand_client_name} inital hand : {player_hand[hand_client_name]}")
 
 # deal more card to player
+
+
 def deal_player(client_connection):
     global client_name, clients, player_hand
     idx = get_client_index(clients, client_connection)
     hand_client_name = clients_names[idx]
     list_cards = player_hand[hand_client_name]
     card = deal_card()
-    list_cards.append(card)
+    pScore = score(hand_client_name, card)
+    if list_cards != []:
+        del list_cards[-1]
+    list_cards.append(card[0])
+    list_cards.append(pScore)
     player_hand[hand_client_name] = list_cards
+
+
+def score(user, card):
+    global player_hand
+    score = 0
+    if player_hand[user] != []:
+        score = player_hand[user][-1]
+        score += card[1]
+    else:
+        score = card[1]
+    return score
 
 
 window.mainloop()

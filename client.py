@@ -30,6 +30,8 @@ def load_images(card_images):
             card_images.update({f"{str(card)}_{suit}": (10, image, )})
 
 # manage player in game contains card
+
+
 class Game:
     name = None
     frame = None
@@ -180,6 +182,12 @@ def updateData():
     # print(data)
 
 
+def ready():
+    global client
+    msg = "ready"
+    client.send(msg.encode())
+
+
 def hit():
     global client
     msg = "hit"
@@ -219,6 +227,8 @@ load_images(cards)
 
 
 botFrame = tkinter.Frame(mainWindow)
+btnReady = tkinter.Button(botFrame, text="Ready", command=lambda: ready())
+btnReady.pack(side=tkinter.LEFT)
 btnHit = tkinter.Button(botFrame, text="Hit", command=lambda: hit())
 btnHit.pack(side=tkinter.LEFT)
 btnStay = tkinter.Button(botFrame, text="Stay", command=lambda: stay())

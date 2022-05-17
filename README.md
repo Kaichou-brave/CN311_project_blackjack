@@ -1,5 +1,5 @@
 # Blackjack CN311
-โปรแกรมนี้คือโปรแกรมสำหรับการเล่น Blackjack รองรับการเล่นแบบ multiplayer 
+โปรแกรมนี้คือโปรแกรมสำหรับการเล่น Blackjack รองรับการเล่นแบบ multiplayer  
 โดยมีการ implement มาจากโปรแกรม chat โดยการใช้ socket programming เพื่อใช้ในวิชา CN311 ระบบปฏิบัติการ
 
 ## วิธีการใช้งาน
@@ -10,10 +10,10 @@
 * กติกาทั้งหมดจะเป็นไปตาม blackjack ทั่วไป เมื่อทำการ stand ครบทุกคน หรือมีคนได้แต้ม 21 จะสามารถชนะเกมนี้ได้
 
 ## Interface
-Server
-![ServerUI](Pics\ServerInterface)
-Client
-![UserUI](Pics\UserInterface)
+* Server  
+![ServerUI](Pics/ServerInterface.png)
+* Client  
+![UserUI](Pics/UserInterface.png)
 ## จัดทำโดย
 * นาย วีรภัทร ลีลาวิทยานนท์ 6210612823
 * นาย รเณศ ชูเผือก 6210612864

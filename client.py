@@ -28,8 +28,12 @@ def load_images(card_images):
             name = 'cards/{}_{}.{}'.format(str(card), suit, extension)
             image = tkinter.PhotoImage(file=name)
             card_images.update({f"{str(card)}_{suit}": (10, image, )})
-
+    image = tkinter.PhotoImage(file='cards/back.png')
+    card_images.update({"back.png": (None, image)})
 # manage player in game contains card
+
+
+status = True  # if False = you lose can't do anything else
 
 
 class Game:
@@ -37,7 +41,7 @@ class Game:
     frame = None
     hand = []
     hand_count = 0
-    status = True #if False = you lose can't do anything else
+    positions = "left"
 
     def __init__(self, initialize):
         self.name = initialize[0]
@@ -48,16 +52,16 @@ class Game:
         self.frame = card_frame = tkinter.Frame(
             mainWindow, relief="sunken", borderwidth=1, bg="black")
         self.frame.pack(ipadx=1,
-                        ipady=1, fill='x', side="left")
+                        ipady=1, fill='x', side="top")
 
         score_label = tkinter.IntVar()
         tkinter.Label(card_frame, text=self.name, bg="black",
-                      fg="white").pack(side="left")
+                      fg="white").pack(side="top")
         tkinter.Label(card_frame, textvariable=score_label,
-                      bg="black", fg="white").pack(side="left")
+                      bg="black", fg="white").pack(side="top")
         score_label.set(self.hand[-1])
         frame = tkinter.Frame(card_frame, bg="black")
-        frame.pack(side="left")
+        frame.pack(side=self.positions)
         for i in range(self.hand_count):
             self.add_card(self.hand[i])
 
@@ -65,6 +69,7 @@ class Game:
         self.hand = data
         self.hand_count = len(data) - 1
         print(self.hand)
+        print(data)
         frame = self.frame
 
         frame.pack_forget()
@@ -73,24 +78,30 @@ class Game:
         self.frame = card_frame = tkinter.Frame(
             mainWindow, relief="sunken", borderwidth=1, bg="black")
         self.frame.pack(ipadx=1,
-                        ipady=1, fill='x', side="left")
+                        ipady=1, fill='x', side="top")
 
         score_label = tkinter.IntVar()
         tkinter.Label(card_frame, text=self.name, bg="black",
-                      fg="white").pack(side="left")
+                      fg="white").pack(side="top")
         tkinter.Label(card_frame, textvariable=score_label,
-                      bg="black", fg="white").pack(side="left")
+                      bg="black", fg="white").pack(side="top")
         score_label.set(self.hand[-1])
 
         frame = tkinter.Frame(card_frame, bg="black")
-        frame.pack(side="left")
+        frame.pack(side=self.positions)
         for i in range(self.hand_count):
             self.add_card(self.hand[i])
 
     def add_card(self, img):
         global cards
         tkinter.Label(self.frame, image=cards[img][1],
-                      relief="raised").pack(side="left")
+                      relief="raised").pack(side=self.positions)
+    
+    def destroy(self):
+        frame = self.frame
+        
+        frame.pack_forget()
+        frame.destroy()
 
 
 def connect():
@@ -133,31 +144,50 @@ def disconnect():
 
 
 player = {}
+dealer = None
 
 
 def receive_data_from_server(sck, m):
-    global player
+    global player, dealer, status
     draw_before_exceed_21 = True
     while True:
         data = pickle.loads(sck.recv(4096))
         print(f"Log {data[0]}")
-        if ((data[0] == "init") and (Game.status==True)):
+        if ((data[0] == "win")):
+            gameData = str(data[1])
+            result_text.set("The Winner are " + gameData)
+            status = True
+            
+        if ((data[0] == "init") and (status == True)):
             result_text.set("Game Start !")
+
             gameData = [username, data[1]]
             play = Game(gameData)
+            dealerData = ["Dealer", data[2]]
+            dealer = Game(dealerData)
+
             player.update({username: play})
-        elif ((data[0] == "hit") and (draw_before_exceed_21==True)):
+        elif ((data[0] == "hit") and (draw_before_exceed_21 == True)):
             text = (str("You drew: ") + str(data[1][-2]))
             result_text.set(text)
             play = player[username]
             play.update(data[1])
-            if Game.status == False:
+            if status == False:
                 draw_before_exceed_21 = False
-                result_text.set("You lose, your score exceeded 21")
+                result_text.set("You lose, your score exceeded 21")  
         if data[0] == "busted":
-            Game.status = False
+            status = False
             result_text.set("You lose, your score exceeded 21")
-
+            
+        if data[0] == "end":
+            status = True
+            result_text.set("")
+            for p in player:
+                play = player[p].destroy()
+            player = {}
+            dealer.destroy()
+            dealer = None
+        
         if not data:
             break
 
@@ -193,12 +223,15 @@ def updateData():
 
     # print(data)
 
+
 def check_condition():
-    if (Game.status == False):
+    global status
+    if (status == False):
         result_text.set("You Lose, All button can't be pressed.")
         return False
     else:
         return True
+
 
 def ready():
     global client
@@ -220,6 +253,11 @@ def stay():
         msg = "stay"
         client.send(msg.encode())
 
+def new_game():
+    global client
+    if (check_condition()):
+        msg = "new"
+        client.send(msg.encode())
 
 # initialize tkinter application
 mainWindow = tkinter.Tk()
@@ -257,6 +295,8 @@ btnHit = tkinter.Button(botFrame, text="Hit", command=lambda: hit())
 btnHit.pack(side=tkinter.LEFT)
 btnStay = tkinter.Button(botFrame, text="Stay", command=lambda: stay())
 btnStay.pack(side=tkinter.LEFT)
+btnNew = tkinter.Button(botFrame, text="New Game", command=lambda: new_game())
+btnNew.pack(side=tkinter.LEFT)
 botFrame.pack(side=tkinter.BOTTOM)
 displayFrame = tkinter.Frame(mainWindow)
 

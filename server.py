@@ -87,17 +87,21 @@ def accept_clients(server):
 stay = []
 ready = []
 cards = []
+new = []
 
 player_hand = {}
 dealer_hand = []
+init_stage_dealer = []
+first_card_score = 0
 
 deck = []
+
 points_name = []
 points = []
 
 
 def blackjack(client_connection, client_ip_addr):
-    global server, clients_names, client_name, clients, ready, stay
+    global server, clients_names, client_name, clients, ready, stay, player_hand, dealer_hand
 
     client_name = client_connection.recv(4096).decode()
 
@@ -119,6 +123,17 @@ def blackjack(client_connection, client_ip_addr):
             break
 
         print(f"recieve data: {data} -- {this_client_name}")
+        if data == "new":
+            new.append(1)
+            if len(new) == len(clients):
+                stay = []
+                ready = []
+                player_hand = {}
+                dealer_hand = []
+                deck = list(cards)
+                random.shuffle(deck)
+                for c in clients:
+                    client_connection.send(pickle.dumps(["end"]))
 
         # check in any client that they're all ready to play then initial deal to any client and broadcast to them
         if data == "ready":
@@ -127,10 +142,10 @@ def blackjack(client_connection, client_ip_addr):
                 initial_deal()
                 print(player_hand)
                 print(dealer_hand)
+                # print(dealer_hand[-1])
                 for idx, c in enumerate(clients):
-                    print()
                     c.send(pickle.dumps(
-                        ["init", player_hand[clients_names[idx]]]))
+                        ["init", player_hand[clients_names[idx]], init_stage_dealer]))
 
         count = 0
 
@@ -170,10 +185,12 @@ def blackjack(client_connection, client_ip_addr):
 
                 # Compute scoreName and score then sendback using Winning Condition
                 winner = winning_condition(points_name, points)
+                winner = winner
+                print(winner)
 
                 for c in clients:
                     client_connection.send(pickle.dumps(
-                        "Winner are", winner))
+                        ["win", winner]))
 
     # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)
@@ -237,10 +254,12 @@ def deal_card():
 
 
 def initial_deal():
+    global init_stage_dealer, dealer_hand
     for i in range(2):
         for client in clients_names:
             deal_player(client)
         deal_dealer()
+    init_stage_dealer = [dealer_hand[0], "back.png", str(first_card_score)]
 
 
 def deal_dealer():
@@ -279,7 +298,7 @@ def deal_player(hand_client_name):
 
 
 def score(type, user, card):
-    global player_hand
+    global player_hand, first_card_score
     if type == "player":
         if player_hand[user] != []:
             score = player_hand[user][-1]
@@ -293,11 +312,28 @@ def score(type, user, card):
             score += card[1]
         else:
             score = card[1]
+            first_card_score = card[1]
         return score
 
 
 def winning_condition(points_name, points):
-    None
+    winner = []
+    winner_string = ""
+    print(dealer_hand[-1])
+    if (int(dealer_hand[-1]) > 21):
+        return ("all player win !")
+    for i in range(len(points)):
+        if ((points[i] > int(dealer_hand[-1])) and (points[i] <= 21)):
+            winner.append(points_name)
+    count = 0
+    for i in range(len(winner)):
+        winner_string += str(winner[i])
+        winner_string += " "
+        print(winner_string)
+        count = count + 1
+    if (count == 0):
+        return "dealer !"
+    return winner_string
 
 
 window.mainloop()

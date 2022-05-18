@@ -1,11 +1,8 @@
-from concurrent.futures import wait
 import tkinter as tk
 import socket
 import threading
 import random
 import pickle
-import datetime
-import time
 
 window = tk.Tk()
 window.title("Sever")
@@ -46,6 +43,7 @@ HOST_PORT = 8080
 client_name = " "
 clients = []
 clients_names = []
+max_connections = 4
 
 
 # Start server function
@@ -78,10 +76,17 @@ def stop_server():
 
 def accept_clients(server):
     while True:
-        client, addr = server.accept()
-        clients.append(client)
-
-        threading._start_new_thread(blackjack, (client, addr))
+        if len(clients) < max_connections:
+            client, addr = server.accept()
+            clients.append(client)
+            msg = "ok"
+            client.send(msg.encode())
+            threading._start_new_thread(blackjack, (client, addr))
+        else:
+            client, addr = server.accept()
+            msg = "max"
+            client.send(msg.encode())
+            client.close()
 
 
 # This is for starting the game
@@ -152,7 +157,7 @@ def blackjack(client_connection, client_ip_addr):
                 print(dealer_hand)
                 for idx, c in enumerate(clients):
                     c.send(pickle.dumps(
-                        ["init", player_hand[clients_names[idx]], init_stage_dealer]))
+                        ["init", clients_names, player_hand, init_stage_dealer]))
 
         count = 0
 
@@ -196,10 +201,9 @@ def blackjack(client_connection, client_ip_addr):
                 winner = winning_condition(points_name, points)
                 winner = winner
                 print(winner)
-
                 for c in clients:
                     c.send(pickle.dumps(
-                        ["win", winner, dealer_hand]))
+                        ["win", winner, dealer_hand, player_hand]))
 
     # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)

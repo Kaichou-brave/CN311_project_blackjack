@@ -3,7 +3,6 @@ import socket
 from tkinter import messagebox
 import tkinter
 import pickle
-from turtle import left
 
 
 def load_images(card_images):
@@ -30,7 +29,7 @@ def load_images(card_images):
             card_images.update({f"{str(card)}_{suit}": (10, image, )})
     image = tkinter.PhotoImage(file='cards/back.png')
     card_images.update({"back.png": (None, image)})
-# manage player in game contains card
+
 
 
 status = True  # if False = you lose can't do anything else
@@ -125,11 +124,18 @@ def connect_to_server(name):
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((HOST_ADDR, HOST_PORT))
-        client.send(name.encode())  # Send name to server after connecting
+        check = client.recv(1024)
+        if check.decode() == "max":
+            client.close()
+            tkinter.messagebox.showerror(
+                title="ERROR!!!", message="Maximum connection")
+        else:
+            client.send(name.encode())  # Send name to server after connecting
 
-        entName.config(state=tkinter.DISABLED)
-        btnConnect.config(state=tkinter.DISABLED)
-        threading._start_new_thread(receive_data_from_server, (client, " "))
+            entName.config(state=tkinter.DISABLED)
+            btnConnect.config(state=tkinter.DISABLED)
+            threading._start_new_thread(
+                receive_data_from_server, (client, " "))
 
     except Exception as e:
         None
@@ -159,16 +165,37 @@ def receive_data_from_server(sck, m):
             res = str(data[1])
             result_text.set("End Game Results" + " --> " + res)
             dealer.update(data[2])
+            for i in data[3]:
+                if (f"{i}" == username):
+                    None
+                else:
+                    play = player[i]
+                    play.update(data[3][i])
+            play = player[username]
+            play.update(data[3][username])
 
         if ((data[0] == "init") and (status == True)):
             result_text.set("Game Start !")
 
-            gameData = [username, data[1]]
-            play = Game(gameData)
-            dealerData = ["Dealer", data[2]]
+            dealerData = ["Dealer", data[3]]
             dealer = Game(dealerData)
 
-            player.update({username: play})
+            for i in range(len(data[1])):
+
+                data1 = f"data --> {data[1][i]}"
+                data2 = f"data --> {username}"
+
+                if (data1 == data2):
+                    None
+                else:
+                    print(data[1][i])
+                    gameData = [data[1][i], data[2][data[1][i]]]
+                    play = Game(gameData)
+                    player.update({data[1][i]: play})
+
+            ownData = [username, data[2][username]]
+            player.update({username: Game(ownData)})
+
         elif ((data[0] == "hit") and (draw_before_exceed_21 == True)):
             text = (str("You drew: ") + str(data[1][-2]))
             result_text.set(text)
@@ -269,7 +296,7 @@ def new_game():
 # initialize tkinter application
 mainWindow = tkinter.Tk()
 mainWindow.title("Black Jack")
-mainWindow.geometry("640x480")
+mainWindow.geometry("1280x720")
 mainWindow.configure(bg="green")
 
 username = " "

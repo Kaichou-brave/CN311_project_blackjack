@@ -6,7 +6,6 @@ import pickle
 from turtle import left
 
 
-
 def load_images(card_images):
     suits = ['heart', 'club', 'diamond', 'spade']
     face_cards = ['jack', 'queen', 'king']
@@ -97,10 +96,10 @@ class Game:
         global cards
         tkinter.Label(self.frame, image=cards[img][1],
                       relief="raised").pack(side=self.positions)
-    
+
     def destroy(self):
         frame = self.frame
-        
+
         frame.pack_forget()
         frame.destroy()
 
@@ -153,13 +152,14 @@ def receive_data_from_server(sck, m):
     draw_before_exceed_21 = True
     while True:
         data = pickle.loads(sck.recv(4096))
+
         print(f"Log {data[0]}")
+
         if ((data[0] == "win")):
             res = str(data[1])
-            result_text.set("The Winner are " + res)
+            result_text.set("End Game Results" + " --> " + res)
             dealer.update(data[2])
-            
-            
+
         if ((data[0] == "init") and (status == True)):
             result_text.set("Game Start !")
 
@@ -176,11 +176,12 @@ def receive_data_from_server(sck, m):
             play.update(data[1])
             if status == False:
                 draw_before_exceed_21 = False
-                result_text.set("You lose, your score exceeded 21")  
+                result_text.set("You lose, your score exceeded 21")
+
         if data[0] == "busted":
             stay()
-            result_text.set("You lose, your score exceeded 21")
-            
+            result_text.set("You lose, your score exceeded 21 Note: auto stay")
+
         if data[0] == "end":
             status = True
             result_text.set("")
@@ -192,13 +193,12 @@ def receive_data_from_server(sck, m):
             except Exception as e:
                 None
             dealer = None
-        
+
         if not data:
             break
 
+
 # Legacy Code, I wrote it and I wanna keep it by Jj
-
-
 def updateData():
     global data
     data = [[]]
@@ -258,11 +258,13 @@ def stay():
         msg = "stay"
         client.send(msg.encode())
 
+
 def new_game():
     global client
     if (check_condition()):
         msg = "new"
         client.send(msg.encode())
+
 
 # initialize tkinter application
 mainWindow = tkinter.Tk()

@@ -114,7 +114,7 @@ def blackjack(client_connection, client_ip_addr):
     deal_count = 0
     new_game_status = True
     status = True
-    
+
     this_client_name = get_name_client(clients, client_connection)
 
     while True:
@@ -150,7 +150,6 @@ def blackjack(client_connection, client_ip_addr):
                 initial_deal()
                 print(player_hand)
                 print(dealer_hand)
-                # print(dealer_hand[-1])
                 for idx, c in enumerate(clients):
                     c.send(pickle.dumps(
                         ["init", player_hand[clients_names[idx]], init_stage_dealer]))
@@ -164,13 +163,9 @@ def blackjack(client_connection, client_ip_addr):
                 points.append(player_hand[this_client_name][-1])
                 status = False
             if data == "hit":
-                this_client_name = get_name_client(clients, client_connection)
                 deal_player(this_client_name)
 
                 if player_hand[this_client_name][-1] > 21:
-                    stay.append(1)
-                    points_name.append(this_client_name)
-                    points.append(player_hand[this_client_name][-1])
                     client_connection.send(pickle.dumps(
                         ["busted", player_hand[this_client_name]]))
 
@@ -184,9 +179,8 @@ def blackjack(client_connection, client_ip_addr):
         if len(stay) != 0:
             if len(clients) == len(stay):
 
-                # you need to sent all player data back to you also the result who win
-                this_client_name = get_name_client(clients, client_connection)
-
+                print(len(stay))
+                print(len(clients))
                 print("All player stand !")
                 print(points_name)
                 print(points)
@@ -334,23 +328,28 @@ def score(type, user, card):
 def winning_condition(points_name, points):
     winner = []
     winner_string = ""
+    condition = 0
     print(dealer_hand[-1])
-    if (int(dealer_hand[-1]) > 21):
-        return ("all player win !")
     for i in range(len(points)):
         if ((points[i] > int(dealer_hand[-1])) and (points[i] <= 21)):
-            winner.append(points_name)
+            winner.append(f"{points_name[i]} = win")
         elif ((points[i] == dealer_hand[-1]) and (points[i] <= 21)):
-            winner.append("dealer")
-    count = 0
+            winner.append(f"{points_name[i]} =  draw")
+        elif ((points[i] < dealer_hand[-1]) and (dealer_hand[-1] > 21)):
+            winner.append(f"{points_name[i]} = win")
+        elif ((points[i] < dealer_hand[-1]) or (points[i] > 21)):
+            winner.append(f"{points_name[i]} = lose")
+
     for i in range(len(winner)):
         winner_string += str(winner[i])
         winner_string += " "
-        if(winner[i] != "dealer"):
-            count = count + 1
-    if (count == 0):
-        return "dealer !"
-    return winner_string
+        if ("lose" in winner_string):
+            condition = 1
+
+    if condition == 0:
+        return "all player win"
+    else:
+        return winner_string
 
 
 window.mainloop()

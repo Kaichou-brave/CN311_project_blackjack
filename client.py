@@ -37,6 +37,7 @@ class Game:
     frame = None
     hand = []
     hand_count = 0
+    status = True #if False = you lose can't do anything else
 
     def __init__(self, initialize):
         self.name = initialize[0]
@@ -136,16 +137,27 @@ player = {}
 
 def receive_data_from_server(sck, m):
     global player
+    draw_before_exceed_21 = True
     while True:
         data = pickle.loads(sck.recv(4096))
         print(f"Log {data[0]}")
-        if data[0] == "init":
+        if ((data[0] == "init") and (Game.status==True)):
+            result_text.set("Game Start !")
             gameData = [username, data[1]]
             play = Game(gameData)
             player.update({username: play})
-        elif data[0] == "hit":
+        elif ((data[0] == "hit") and (draw_before_exceed_21==True)):
+            text = (str("You drew: ") + str(data[1][-2]))
+            result_text.set(text)
             play = player[username]
             play.update(data[1])
+            if Game.status == False:
+                draw_before_exceed_21 = False
+                result_text.set("You lose, your score exceeded 21")
+        if data[0] == "busted":
+            Game.status = False
+            result_text.set("You lose, your score exceeded 21")
+
         if not data:
             break
 
@@ -181,23 +193,32 @@ def updateData():
 
     # print(data)
 
+def check_condition():
+    if (Game.status == False):
+        result_text.set("You Lose, All button can't be pressed.")
+        return False
+    else:
+        return True
 
 def ready():
     global client
-    msg = "ready"
-    client.send(msg.encode())
+    if (check_condition()):
+        msg = "ready"
+        client.send(msg.encode())
 
 
 def hit():
     global client
-    msg = "hit"
-    client.send(msg.encode())
+    if (check_condition()):
+        msg = "hit"
+        client.send(msg.encode())
 
 
 def stay():
     global client
-    msg = "stay"
-    client.send(msg.encode())
+    if (check_condition()):
+        msg = "stay"
+        client.send(msg.encode())
 
 
 # initialize tkinter application
@@ -223,9 +244,12 @@ topFrame.pack(side=tkinter.TOP)
 cards = {}
 load_images(cards)
 
+# game messages
+result_text = tkinter.StringVar()
+result = tkinter.Label(mainWindow, textvariable=result_text)
+result.pack(side=tkinter.TOP)
+
 # print(cards)
-
-
 botFrame = tkinter.Frame(mainWindow)
 btnReady = tkinter.Button(botFrame, text="Ready", command=lambda: ready())
 btnReady.pack(side=tkinter.LEFT)

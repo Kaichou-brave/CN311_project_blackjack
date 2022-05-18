@@ -87,9 +87,13 @@ def accept_clients(server):
 stay = []
 ready = []
 cards = []
+
 player_hand = {}
-deck = []
 dealer_hand = []
+
+deck = []
+points_name = []
+points = []
 
 
 def blackjack(client_connection, client_ip_addr):
@@ -104,6 +108,9 @@ def blackjack(client_connection, client_ip_addr):
     status = True
     deal_count = 0
     new_game_status = True
+
+    this_client_name = get_name_client(clients, client_connection)
+
     while True:
         data = client_connection.recv(4096).decode()
         if not data:
@@ -111,40 +118,36 @@ def blackjack(client_connection, client_ip_addr):
         if data == "exit":
             break
 
-        print(f"recieve data: {data} -- {client_name}")
+        print(f"recieve data: {data} -- {this_client_name}")
 
         # check in any client that they're all ready to play then initial deal to any client and broadcast to them
         if data == "ready":
             ready.append(1)
             if len(ready) == len(clients):
                 initial_deal()
+                print(player_hand)
+                print(dealer_hand)
                 for idx, c in enumerate(clients):
                     print()
                     c.send(pickle.dumps(
                         ["init", player_hand[clients_names[idx]]]))
 
         count = 0
-        if len(stay) != 0:
-            if len(clients) == len(stay):
-
-                # you need to sent all player data back to you also the result who win
-                this_client_name = get_name_client(clients, client_connection)
-
-                for c in clients:
-                    if c != client_connection:
-                        # c.send()
-                        None
 
         if status != False:
             if data == "stay":
                 stay.append(1)
+                points_name.append(this_client_name)
+                points.append(player_hand[this_client_name][-1])
                 status = False
-
             if data == "hit":
                 this_client_name = get_name_client(clients, client_connection)
                 deal_player(this_client_name)
 
-                if player_hand[client_name][-1] > 21:
+                if player_hand[this_client_name][-1] > 21:
+                    stay.append(1)
+                    points_name.append(this_client_name)
+                    points.append(player_hand[this_client_name][-1])
                     client_connection.send(pickle.dumps(
                         ["busted", player_hand[this_client_name]]))
 
@@ -154,6 +157,23 @@ def blackjack(client_connection, client_ip_addr):
                 # send your own hand back to you
                 client_connection.send(pickle.dumps(
                     ["hit", player_hand[this_client_name]]))
+
+        if len(stay) != 0:
+            if len(clients) == len(stay):
+
+                # you need to sent all player data back to you also the result who win
+                this_client_name = get_name_client(clients, client_connection)
+
+                print("All player stand !")
+                print(points_name)
+                print(points)
+
+                # Compute scoreName and score then sendback using Winning Condition
+                winner = winning_condition(points_name, points)
+
+                for c in clients:
+                    client_connection.send(pickle.dumps(
+                        "Winner are", winner))
 
     # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)
@@ -217,17 +237,26 @@ def deal_card():
 
 
 def initial_deal():
-    # global client_name, clients, player_hand
-    # idx = get_client_index(clients, client_connection)
-    # hand_client_name = clients_names[idx]
-    # player_hand.update({hand_client_name: []})
-    # deal_player(client_connection)
-    # deal_player(client_connection)
-    # print(
-    # f" player {hand_client_name} inital hand : {player_hand[hand_client_name]}")
     for i in range(2):
         for client in clients_names:
             deal_player(client)
+        deal_dealer()
+
+
+def deal_dealer():
+    global dealer_hand
+    try:
+        list_cards = dealer_hand
+    except KeyError:
+        list_cards = []
+        dealer_hand = list_cards
+    card = deal_card()
+    dScore = score(" ", " ", card)
+    if list_cards != []:
+        del list_cards[-1]
+    list_cards.append(card[0])
+    list_cards.append(dScore)
+    dealer_hand = list_cards
 
 
 # deal more card to player
@@ -238,23 +267,37 @@ def deal_player(hand_client_name):
         list_cards = []
         player_hand[hand_client_name] = list_cards
     card = deal_card()
-    pScore = score(hand_client_name, card)
+    pScore = score("player", hand_client_name, card)
     if list_cards != []:
         del list_cards[-1]
+    # checkCondition if:
+    # false = can't do any more action and already lose
+    # true = can still do action
     list_cards.append(card[0])
     list_cards.append(pScore)
     player_hand[hand_client_name] = list_cards
 
 
-def score(user, card):
+def score(type, user, card):
     global player_hand
-    score = 0
-    if player_hand[user] != []:
-        score = player_hand[user][-1]
-        score += card[1]
+    if type == "player":
+        if player_hand[user] != []:
+            score = player_hand[user][-1]
+            score += card[1]
+        else:
+            score = card[1]
+        return score
     else:
-        score = card[1]
-    return score
+        if dealer_hand != []:
+            score = dealer_hand[-1]
+            score += card[1]
+        else:
+            score = card[1]
+        return score
+
+
+def winning_condition(points_name, points):
+    None
 
 
 window.mainloop()

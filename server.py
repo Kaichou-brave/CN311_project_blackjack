@@ -84,10 +84,12 @@ def accept_clients(server):
         threading._start_new_thread(blackjack, (client, addr))
 
 
+# This is for starting the game
 stay = []
 ready = []
 cards = []
 new = []
+
 
 player_hand = {}
 dealer_hand = []
@@ -101,7 +103,7 @@ points = []
 
 
 def blackjack(client_connection, client_ip_addr):
-    global server, clients_names, client_name, clients, ready, stay, player_hand, dealer_hand
+    global server, clients_names, client_name, clients, stay, ready, new, player_hand, dealer_hand, points_name, points
 
     client_name = client_connection.recv(4096).decode()
 
@@ -109,10 +111,10 @@ def blackjack(client_connection, client_ip_addr):
     print(client_name + " connected")
     update_client_names_display(clients_names)  # update client names display
 
-    status = True
     deal_count = 0
     new_game_status = True
-
+    status = True
+    
     this_client_name = get_name_client(clients, client_connection)
 
     while True:
@@ -126,6 +128,9 @@ def blackjack(client_connection, client_ip_addr):
         if data == "new":
             new.append(1)
             if len(new) == len(clients):
+                # This is garbage collecting
+                points = []
+                points_name = []
                 stay = []
                 ready = []
                 player_hand = {}
@@ -133,10 +138,13 @@ def blackjack(client_connection, client_ip_addr):
                 deck = list(cards)
                 random.shuffle(deck)
                 for c in clients:
-                    client_connection.send(pickle.dumps(["end"]))
+                    c.send(pickle.dumps(["end"]))
+                ready = []
+                new = []
 
         # check in any client that they're all ready to play then initial deal to any client and broadcast to them
         if data == "ready":
+            status = True
             ready.append(1)
             if len(ready) == len(clients):
                 initial_deal()
@@ -183,14 +191,21 @@ def blackjack(client_connection, client_ip_addr):
                 print(points_name)
                 print(points)
 
+                while True:
+                    if dealer_hand[-1] < 17:
+                        deal_dealer()
+                    if dealer_hand[-1] >= 17:
+                        break
+
                 # Compute scoreName and score then sendback using Winning Condition
+                winner = ""
                 winner = winning_condition(points_name, points)
                 winner = winner
                 print(winner)
 
                 for c in clients:
-                    client_connection.send(pickle.dumps(
-                        ["win", winner]))
+                    c.send(pickle.dumps(
+                        ["win", winner, dealer_hand]))
 
     # find the client index then remove from both lists(client name list and connection list)
     idx = get_client_index(clients, client_connection)
@@ -325,12 +340,14 @@ def winning_condition(points_name, points):
     for i in range(len(points)):
         if ((points[i] > int(dealer_hand[-1])) and (points[i] <= 21)):
             winner.append(points_name)
+        elif ((points[i] == dealer_hand[-1]) and (points[i] <= 21)):
+            winner.append("dealer")
     count = 0
     for i in range(len(winner)):
         winner_string += str(winner[i])
         winner_string += " "
-        print(winner_string)
-        count = count + 1
+        if(winner[i] != "dealer"):
+            count = count + 1
     if (count == 0):
         return "dealer !"
     return winner_string

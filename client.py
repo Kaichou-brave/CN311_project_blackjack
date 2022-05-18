@@ -6,6 +6,7 @@ import pickle
 from turtle import left
 
 
+
 def load_images(card_images):
     suits = ['heart', 'club', 'diamond', 'spade']
     face_cards = ['jack', 'queen', 'king']
@@ -154,9 +155,10 @@ def receive_data_from_server(sck, m):
         data = pickle.loads(sck.recv(4096))
         print(f"Log {data[0]}")
         if ((data[0] == "win")):
-            gameData = str(data[1])
-            result_text.set("The Winner are " + gameData)
-            status = True
+            res = str(data[1])
+            result_text.set("The Winner are " + res)
+            dealer.update(data[2])
+            
             
         if ((data[0] == "init") and (status == True)):
             result_text.set("Game Start !")
@@ -176,7 +178,7 @@ def receive_data_from_server(sck, m):
                 draw_before_exceed_21 = False
                 result_text.set("You lose, your score exceeded 21")  
         if data[0] == "busted":
-            status = False
+            stay()
             result_text.set("You lose, your score exceeded 21")
             
         if data[0] == "end":
@@ -185,7 +187,10 @@ def receive_data_from_server(sck, m):
             for p in player:
                 play = player[p].destroy()
             player = {}
-            dealer.destroy()
+            try:
+                dealer.destroy()
+            except Exception as e:
+                None
             dealer = None
         
         if not data:

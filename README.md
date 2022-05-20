@@ -20,10 +20,9 @@ Using server as a dealer and user will be the player.
 ![UserUI](Pics/UserInterface.png)
 ### Gameplay after Ready
 ![Gameplay](Pics/Gameplay.png)
-### GameEnd
-![GameEnd](Pics/GameEnd.png)
 ### Results
-![Results](Pics/Results.png)
+![GameEnd](Pics/GameEnd.png)
+
 
 ## Developer
 * Raned Chuphueak

@@ -18,6 +18,10 @@ Using server as a dealer and user will be the player.
 ![ServerUI](Pics/ServerInterface.png)
 ### Client
 ![UserUI](Pics/UserInterface.png)
+### Gameplay after Ready
+![Gameplay](Pics/Gameplay.png)
+### GameEnd
+![GameEnd](Pics/GameEnd.png)
 ### Results
 ![Results](Pics/Results.png)
 
@@ -27,7 +31,7 @@ Using server as a dealer and user will be the player.
 
 # Thai ReadME.md
 โปรแกรมนี้คือโปรแกรมสำหรับการเล่น Blackjack รองรับการเล่นแบบ multiplayer  
-โดยมีการ implement มาจากโปรแกรม chat โดยการใช้ socket programming เพื่อใช้ในวิชา CN311 ระบบปฏิบัติการ
+โดยการใช้ socket programming เพื่อใช้ในวิชา CN311 ระบบปฏิบัติการ
 
 ## วิธีการใช้งาน
 * ผู้ใช้งานจำเป็นต้องทำการติดตั้งภาษา python ภายในคอมพิวเตอร์ก่อนที่จะทำการใช้งาน
